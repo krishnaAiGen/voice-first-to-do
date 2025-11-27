@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     # Default user for demo
     default_user_id: str = Field(..., alias="DEFAULT_USER_ID")
     
+    # Conversation memory
+    conversation_history: int = Field(default=5, alias="CONVERSATION_HISTORY")
+    
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS origins string into list"""

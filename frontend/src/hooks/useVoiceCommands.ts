@@ -106,8 +106,11 @@ export function useVoiceCommands() {
       setTranscript(result.transcript);
       setResponse(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process voice command');
+      // Log the actual error for debugging
       console.error('Error processing audio:', err);
+      
+      // Set a user-friendly error message
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }

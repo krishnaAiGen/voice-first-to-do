@@ -33,20 +33,38 @@ class IntentParser:
         
         Args:
             command: User command text
-            user_context: Context like timezone, current time
+            user_context: Context like timezone, current time, chat history
         
         Returns:
             Formatted prompt
         """
         current_datetime = user_context.get("current_datetime", datetime.now().isoformat())
         user_timezone = user_context.get("timezone", "UTC")
+        chat_history = user_context.get("chat_history", [])
+        
+        # Build chat history context
+        history_text = ""
+        if chat_history:
+            history_text = "\n\nRecent conversation:\n"
+            for msg in chat_history:
+                role = "User" if msg['type'] == 'user' else "Assistant"
+                content = msg['content'][:100]  # Truncate long messages
+                history_text += f"{role}: {content}\n"
+            history_text += "\n"
         
         return f"""You are a task management intent parser. Convert the user's command into a structured specification.
 
 Current date/time: {current_datetime}
-User timezone: {user_timezone}
+User timezone: {user_timezone}{history_text}
+Current user command: "{command}"
 
-User command: "{command}"
+**IMPORTANT**: If the user's message is a greeting (hi, hello, hey), casual chat (how are you, what's up), or NOT task-related (asking about you, saying goodbye):
+- Set complexity to "simple"
+- Set operation to "read"  
+- Set filters to [] and limit to 0
+- Provide a friendly, helpful natural_response that guides them
+
+Consider the conversation history above when interpreting the current command. Users might reference previous messages (e.g., "that one", "the task I just created", "mark it as done").
 
 Respond with JSON only (no markdown, no explanations):
 {{
@@ -249,6 +267,78 @@ Command: "Change my project task to high priority and move it to next Monday"
     }}
   }}],
   "natural_response": "Changed your project task to high priority and moved it to next Monday"
+}}
+
+**GREETING & CASUAL CONVERSATION EXAMPLES:**
+
+Command: "Hi"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 0
+  }}],
+  "natural_response": "Hi! 👋 I'm your task assistant. Try saying 'show me my tasks' or 'create a task to buy groceries'."
+}}
+
+Command: "Hello"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 0
+  }}],
+  "natural_response": "Hello! I'm here to help you manage your tasks. What would you like to do?"
+}}
+
+Command: "How are you?"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 0
+  }}],
+  "natural_response": "I'm doing great, thanks for asking! I'm ready to help you with your tasks. Try 'show my tasks' or 'create a new task'."
+}}
+
+Command: "What can you do?"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 0
+  }}],
+  "natural_response": "I can help you manage tasks with voice commands! Try: 'show my tasks', 'create a task to...', 'mark [task] as completed', 'delete [task]', or 'show overdue tasks'."
+}}
+
+Command: "Thank you"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 0
+  }}],
+  "natural_response": "You're welcome! Let me know if you need anything else with your tasks."
 }}
 
 Additional Rules:

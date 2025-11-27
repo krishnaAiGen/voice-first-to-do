@@ -2,9 +2,11 @@
 
 import time
 from typing import Any
+from uuid import UUID
 from app.clients.deepgram_client import DeepgramClient
 from app.services.intent_service import IntentService
 from app.services.query_executor import QueryExecutor
+from app.core.config import settings
 from app.utils.logger import setup_logger
 from app.utils.errors import VoiceAppException
 
@@ -78,16 +80,22 @@ class VoiceService:
         Returns:
             Enriched natural response with task details
         """
-        if not data:
+        if data is None:
             return base_response
         
         # Handle list of tasks (read operations)
         if isinstance(data, list) and operation == 'read':
             if len(data) == 0:
-                return "No tasks found matching your criteria."
+                return "You have 0 tasks."
+            
+            # Start with count
+            task_count = len(data)
+            if task_count == 1:
+                enriched = f"You have 1 task:\n\n"
+            else:
+                enriched = f"You have {task_count} tasks:\n\n"
             
             # Format task details
-            enriched = base_response + "\n\n"
             for task in data[:5]:  # Limit to 5 tasks
                 title = self._get_field(task, 'title', 'Untitled')
                 status = self._get_field(task, 'status', 'pending').replace('_', ' ').title()
@@ -141,7 +149,8 @@ class VoiceService:
     async def process_command(
         self,
         audio_base64: str,
-        user_id: str
+        user_id: str,
+        chat_history: list = None
     ) -> VoiceCommandResult:
         """
         Process voice command end-to-end
@@ -162,14 +171,16 @@ class VoiceService:
             # Step 1: Speech to Text
             logger.info("Step 1: Transcribing audio")
             transcript = await self.deepgram_client.transcribe(audio_base64)
-            logger.info(f"Transcript: {transcript}")
+            # Transcript already logged in green by deepgram_client
             
-            # Step 2: Parse Intent
+            # Step 2: Parse Intent with conversation history
             logger.info("Step 2: Parsing intent")
             intent_result = await self.intent_service.parse_intent(
                 transcript,
-                user_id
+                user_id,
+                chat_history=chat_history or []
             )
+            print(f"\033[92m✓ Intent parsed: {intent_result.specification.steps[0].operation if intent_result.specification.steps else 'unknown'}\033[0m")
             logger.info(f"Intent result: {intent_result}")
             
             # Step 3: Execute Query
@@ -181,6 +192,7 @@ class VoiceService:
             
             # Calculate latency
             latency_ms = (time.time() - start_time) * 1000
+            print(f"\033[92m✓ Completed in {latency_ms:.0f}ms\033[0m")
             logger.info(f"Total latency: {latency_ms:.2f}ms")
             
             # Handle failure cases with friendly messages
@@ -209,14 +221,39 @@ class VoiceService:
                     latency_ms=latency_ms
                 )
             
+            # Check for casual conversation (greeting, chat, non-task commands)
+            # These have limit=0 and no filters, so we just return the LLM's friendly response
+            step = intent_result.specification.steps[0] if intent_result.specification.steps else None
+            is_casual_conversation = (
+                step and 
+                step.operation == 'read' and 
+                step.limit == 0 and 
+                not step.filters
+            )
+            
+            if is_casual_conversation:
+                # Just return the LLM's natural response without enrichment
+                return VoiceCommandResult(
+                    success=True,
+                    transcript=transcript,
+                    result=None,
+                    natural_response=intent_result.specification.natural_response,
+                    latency_ms=latency_ms
+                )
+            
             # Enrich natural response with actual data for successful operations
             natural_response = intent_result.specification.natural_response
-            if execution_result.success and execution_result.data:
+            operation = intent_result.specification.steps[0].operation if intent_result.specification.steps else None
+            
+            if execution_result.success and execution_result.data is not None:
                 natural_response = self._enrich_response(
                     natural_response,
                     execution_result.data,
-                    intent_result.specification.steps[0].operation if intent_result.specification.steps else None
+                    operation
                 )
+            # Log the final response in green
+            response_preview = natural_response.split('\n')[0][:60]  # First line, max 60 chars
+            print(f"\033[92m✓ Response: {response_preview}{'...' if len(natural_response) > 60 else ''}\033[0m")
             
             return VoiceCommandResult(
                 success=execution_result.success,

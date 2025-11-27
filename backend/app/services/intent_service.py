@@ -25,7 +25,8 @@ class IntentService:
         self,
         command: str,
         user_id: str,
-        timezone: str = "UTC"
+        timezone: str = "UTC",
+        chat_history: list = None
     ) -> IntentResult:
         """
         Parse user command into intent
@@ -34,6 +35,7 @@ class IntentService:
             command: User command text
             user_id: User ID
             timezone: User timezone
+            chat_history: Recent conversation history
         
         Returns:
             IntentResult with specification
@@ -44,7 +46,8 @@ class IntentService:
         user_context = {
             "user_id": user_id,
             "timezone": timezone,
-            "current_datetime": datetime.now().isoformat()
+            "current_datetime": datetime.now().isoformat(),
+            "chat_history": chat_history or []
         }
         
         # Parse with LLM

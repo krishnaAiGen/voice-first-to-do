@@ -5,16 +5,17 @@ import { useEffect, useRef, useState } from 'react';
 
 interface Message {
   id: string;
-  type: 'user' | 'assistant' | 'loading';
+  type: 'user' | 'assistant' | 'loading' | 'error';
   content: string;
   timestamp: Date;
 }
 
 interface VoiceChatSidebarProps {
   onCommandProcessed?: () => void;
+  initialMessages?: any[];
 }
 
-export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSidebarProps) {
+export default function VoiceChatSidebar({ onCommandProcessed, initialMessages = [] }: VoiceChatSidebarProps) {
   const {
     isRecording,
     isProcessing,
@@ -27,16 +28,64 @@ export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSideba
   } = useVoiceCommands();
 
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Load initial messages from chat history
+  useEffect(() => {
+    if (initialMessages.length > 0) {
+      const formattedMessages = initialMessages.map((msg: any) => ({
+        id: msg.id,
+        type: msg.message_type,
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+      }));
+      setMessages(formattedMessages);
+    }
+  }, [initialMessages]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastTranscriptRef = useRef<string>('');
   const lastResponseRef = useRef<string>('');
   const lastErrorRef = useRef<string>('');
   const onCommandProcessedRef = useRef(onCommandProcessed);
+  const isRecordingRef = useRef(isRecording);
 
   // Update ref when callback changes
   useEffect(() => {
     onCommandProcessedRef.current = onCommandProcessed;
   }, [onCommandProcessed]);
+
+  // Update recording ref when state changes
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  // Keyboard shortcut: Hold Option/Alt to record
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if Option/Alt key is pressed (not Cmd/Ctrl to avoid conflicts)
+      if (e.altKey && !e.metaKey && !e.ctrlKey && !isRecordingRef.current && !isProcessing) {
+        e.preventDefault();
+        startRecording();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Check if Option/Alt key is released
+      if (e.key === 'Alt' && isRecordingRef.current) {
+        e.preventDefault();
+        stopRecording();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isProcessing, startRecording, stopRecording]);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -121,7 +170,7 @@ export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSideba
           {
             id: Date.now().toString() + '-error',
             type: 'assistant',
-            content: `Error: ${error}`,
+            content: '❌ Something went wrong. Please try again.',
             timestamp: new Date(),
           },
         ];
@@ -149,8 +198,12 @@ export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSideba
           </svg>
           Voice Assistant
         </h2>
-        <p className="text-sm text-white/80 mt-1">
-          Speak naturally to manage your tasks
+        <p className="text-sm text-white/90 mt-1 flex items-center">
+          <span>Hold</span>
+          <kbd className="mx-1 px-1.5 py-0.5 text-xs font-semibold bg-white/20 border border-white/30 rounded">
+            ⌥ Option
+          </kbd>
+          <span>to speak</span>
         </p>
       </div>
 
@@ -288,12 +341,19 @@ export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSideba
         )}
 
         {/* Mic Button */}
-        <div className="flex justify-center">
+        <div className="flex justify-center relative">
+          {/* Pulse ring when recording */}
+          {isRecording && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-red-400 opacity-75 animate-ping"></div>
+            </div>
+          )}
+          
           <button
             onClick={isRecording ? stopRecording : startRecording}
             disabled={isProcessing}
             className={`
-              relative w-16 h-16 rounded-full transition-all duration-300 shadow-lg
+              relative w-16 h-16 rounded-full transition-all duration-300 shadow-lg z-10
               ${
                 isRecording
                   ? 'bg-red-500 hover:bg-red-600 scale-110'
@@ -327,13 +387,25 @@ export default function VoiceChatSidebar({ onCommandProcessed }: VoiceChatSideba
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-3">
-          {isRecording
-            ? 'Click to stop recording'
-            : isProcessing
-            ? 'Processing your command...'
-            : 'Click to start speaking'}
-        </p>
+        {!isRecording && !isProcessing && (
+          <div className="text-center mt-3">
+            <p className="text-xs text-gray-600 font-medium">
+              Click or hold <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Option</kbd> to record
+            </p>
+          </div>
+        )}
+        
+        {isRecording && (
+          <p className="text-xs text-red-600 text-center mt-3 font-medium animate-pulse">
+            🔴 Recording... Release Option or click to stop
+          </p>
+        )}
+        
+        {isProcessing && (
+          <p className="text-xs text-gray-500 text-center mt-3">
+            Processing your command...
+          </p>
+        )}
       </div>
     </div>
   );
