@@ -92,13 +92,13 @@ psql todo_voice_db < init_db.sql
 
 ```bash
 # Make sure you're in the backend directory with venv activated
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 3002
 ```
 
 #### Method 2: Using Python Module
 
 ```bash
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 3002
 ```
 
 #### Method 3: Running main.py Directly
@@ -107,14 +107,14 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 python app/main.py
 ```
 
-The backend will start on **http://localhost:8000**
+The backend will start on **http://localhost:3002**
 
 ### 7. Verify Backend is Running
 
 Open your browser and visit:
-- **API Root**: http://localhost:8000
-- **Interactive API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
+- **API Root**: http://localhost:3002
+- **Interactive API Docs**: http://localhost:3002/docs
+- **Health Check**: http://localhost:3002/health
 
 ## Frontend Setup (Node.js)
 
@@ -222,7 +222,7 @@ PORT=3001 npm run dev
 **Solution**: Check `.env.local` has correct backend URL
 ```bash
 cat .env.local
-# Should show: NEXT_PUBLIC_API_URL=http://localhost:8000/api
+# Should show: NEXT_PUBLIC_API_URL=http://localhost:3002/api
 ```
 
 ## Directory Structure After Setup
@@ -243,13 +243,13 @@ voice-first-to-do/
 
 ## What Ports Are Used?
 
-- **Backend API**: http://localhost:8000
+- **Backend API**: http://localhost:3002
 - **Frontend UI**: http://localhost:3000
 - **PostgreSQL**: localhost:5432
 
 ## Next Steps
 
-1. ✅ Backend running on http://localhost:8000
+1. ✅ Backend running on http://localhost:3002
 2. ✅ Frontend running on http://localhost:3000
 3. ✅ Database initialized with sample data
 4. 🎤 Start using voice commands!

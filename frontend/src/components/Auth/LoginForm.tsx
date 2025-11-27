@@ -25,7 +25,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         ? { email: email.toLowerCase(), password }
         : { email: email.toLowerCase(), password, display_name: displayName };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
       const response = await fetch(`${apiUrl.replace('/api', '')}${endpoint}`, {
         method: 'POST',
         headers: {

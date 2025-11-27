@@ -150,8 +150,8 @@ docker-compose up -d
 
 4. **Access the application**
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- Backend API: http://localhost:3002
+- API Docs: http://localhost:3002/docs
 
 ### Option 2: Manual Setup
 
