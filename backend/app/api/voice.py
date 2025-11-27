@@ -25,6 +25,41 @@ logger = setup_logger(__name__)
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 
+@router.post("/transcribe")
+async def transcribe_only(
+    request: VoiceCommandRequest,
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Quick endpoint: Just transcribe audio and return immediately
+    
+    Headers:
+        Authorization: Bearer <access_token>
+    
+    Returns:
+        { "success": true, "transcript": "..." }
+    """
+    try:
+        logger.info(f"Quick transcription for user: {user_id}")
+        
+        from app.clients.deepgram_client import DeepgramClient
+        
+        deepgram_client = DeepgramClient()
+        transcript = await deepgram_client.transcribe(request.audio_base64)
+        
+        return {
+            "success": True,
+            "transcript": transcript
+        }
+    except Exception as e:
+        logger.error(f"Transcription failed: {str(e)}")
+        return {
+            "success": False,
+            "transcript": "",
+            "error": str(e)
+        }
+
+
 def get_voice_service(db: AsyncSession = Depends(get_db)) -> VoiceService:
     """
     Dependency to create VoiceService with all dependencies
@@ -107,10 +142,12 @@ async def process_voice_command(
         ]
         
         # Process command with authenticated user and chat history
+        # If transcript is already provided (from /transcribe call), skip STT
         result = await voice_service.process_command(
             audio_base64=request.audio_base64,
             user_id=user_id,
-            chat_history=chat_history
+            chat_history=chat_history,
+            transcript=request.transcript  # Skip STT if provided
         )
         
         # Save conversation to chat history

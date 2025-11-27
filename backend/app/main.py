@@ -59,6 +59,16 @@ async def startup_event():
     """Run on application startup"""
     logger.info("Starting Voice-First To-Do API")
     logger.info(f"Environment: {settings.environment}")
+    
+    # Warm up database connection pool
+    try:
+        from app.clients.database_client import database_client
+        async with database_client.get_session() as session:
+            from sqlalchemy import text
+            await session.execute(text("SELECT 1"))
+        logger.info("Database connection pool warmed up")
+    except Exception as e:
+        logger.warning(f"Failed to warm up connection pool: {e}")
 
 
 @app.on_event("shutdown")

@@ -150,7 +150,8 @@ class VoiceService:
         self,
         audio_base64: str,
         user_id: str,
-        chat_history: list = None
+        chat_history: list = None,
+        transcript: str = None
     ) -> VoiceCommandResult:
         """
         Process voice command end-to-end
@@ -158,6 +159,8 @@ class VoiceService:
         Args:
             audio_base64: Base64-encoded audio data
             user_id: User ID
+            chat_history: Recent conversation history
+            transcript: Pre-computed transcript (optional, skips STT if provided)
         
         Returns:
             VoiceCommandResult
@@ -168,10 +171,14 @@ class VoiceService:
         start_time = time.time()
         
         try:
-            # Step 1: Speech to Text
-            logger.info("Step 1: Transcribing audio")
-            transcript = await self.deepgram_client.transcribe(audio_base64)
-            # Transcript already logged in green by deepgram_client
+            # Step 1: Speech to Text (skip if transcript already provided)
+            if transcript:
+                logger.info("Step 1: Using pre-computed transcript")
+                print(f"\033[92m✓ Transcript (cached): {transcript}\033[0m")
+            else:
+                logger.info("Step 1: Transcribing audio")
+                transcript = await self.deepgram_client.transcribe(audio_base64)
+                # Transcript already logged in green by deepgram_client
             
             # Step 2: Parse Intent with conversation history
             logger.info("Step 2: Parsing intent")

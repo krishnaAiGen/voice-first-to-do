@@ -43,7 +43,7 @@ class UserRepository:
         
         self.session.add(user)
         await self.session.commit()
-        await self.session.refresh(user)
+        # Removed refresh - SQLAlchemy maintains object state after commit
         
         logger.info(f"Created user: {user.email}")
         return user
@@ -78,16 +78,21 @@ class UserRepository:
     
     async def update_last_login(self, user_id: UUID) -> None:
         """
-        Update user's last login timestamp
+        Update user's last login timestamp using direct UPDATE query
         
         Args:
             user_id: User UUID
         """
-        user = await self.get_by_id(user_id)
-        if user:
-            user.last_login_at = datetime.utcnow()
-            await self.session.commit()
-            logger.info(f"Updated last login for user: {user.email}")
+        from sqlalchemy import update
+        
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(last_login_at=datetime.utcnow())
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
+        logger.info(f"Updated last login for user: {user_id}")
     
     async def update(self, user_id: UUID, **kwargs) -> Optional[User]:
         """
@@ -109,7 +114,7 @@ class UserRepository:
                 setattr(user, key, value)
         
         await self.session.commit()
-        await self.session.refresh(user)
+        # Removed refresh - SQLAlchemy maintains object state after commit
         
         logger.info(f"Updated user: {user.email}")
         return user

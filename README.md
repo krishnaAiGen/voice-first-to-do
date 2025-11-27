@@ -4,13 +4,32 @@ A production-ready voice-controlled to-do list application with **sub-2 second l
 
 ## 🎯 Key Features
 
+### Core Functionality
 - **Voice-First Interface**: Natural language voice commands for all operations
-- **Sub-2s Latency**: Optimized architecture for fast response times
+- **Sub-2s Perceived Latency**: Two-phase response system (transcript in ~1.5s, full response in ~3s)
 - **90%+ Accuracy**: LLM-powered intent parsing with high reliability
 - **Full CRUD Operations**: Create, read, update, and delete tasks via voice
+- **Conversational Memory**: 5-turn context window for natural follow-up commands
+- **Greeting Handling**: Graceful handling of casual conversation ("Hi", "How are you?")
+
+### User Experience
+- **Keyboard Shortcuts**: Hold Option/Alt to record, release to stop
+- **Audio Visualization**: Real-time waveform and volume meter
+- **Resizable Sidebar**: Customizable chat interface (300px - 800px)
+- **Instant Feedback**: Transcript appears immediately, processing happens in background
+- **User-Friendly Errors**: No technical jargon, helpful error messages
+
+### Security & Architecture
+- **Email/Password Authentication**: Secure JWT-based auth with access + refresh tokens
+- **User Isolation**: Complete data separation between users
 - **Specification-Based Architecture**: Zero SQL injection risk with safe query building
+- **Performance Optimized**: Non-blocking operations, no redundant DB queries
+
+### Production Ready
+- **Docker Support**: Full containerization for easy deployment
+- **PostgreSQL 15+**: With full-text search and optimized indexes
+- **Comprehensive Error Handling**: Graceful degradation and recovery
 - **Modern UI**: Beautiful, responsive interface built with Next.js and Tailwind CSS
-- **Production-Ready**: Docker support, comprehensive error handling, and logging
 
 ## 🏗️ Architecture
 
@@ -42,20 +61,24 @@ Voice Input → STT (Deepgram) → Text Command
 
 ### Backend
 - **Framework**: FastAPI (Python 3.11+)
-- **Database**: PostgreSQL 15+ with asyncpg
-- **STT**: Deepgram Nova-2
+- **Database**: PostgreSQL 15+ with asyncpg driver
+- **STT**: Deepgram Nova-3 (1.2-1.6s latency)
 - **LLM**: Google Gemini 2.5 Flash
 - **ORM**: SQLAlchemy (async)
+- **Authentication**: JWT (access + refresh tokens) with bcrypt password hashing
 
 ### Frontend
 - **Framework**: Next.js 14 (React 18)
 - **Styling**: Tailwind CSS
 - **Language**: TypeScript
-- **HTTP Client**: Axios
+- **HTTP Client**: Axios with JWT interceptors
+- **Audio**: Web Audio API (AudioContext + AnalyserNode)
+- **State Management**: React hooks (useState, useEffect, useCallback)
 
 ### Infrastructure
 - **Containerization**: Docker & Docker Compose
 - **Deployment**: Vercel-ready configuration
+- **Database**: AWS RDS PostgreSQL or local PostgreSQL
 
 ## 📁 Project Structure
 
@@ -358,6 +381,27 @@ psql -d todo_voice_db -U voice_user
 # Frontend: 3000 (default)
 # Database: 5432 (default)
 ```
+
+## 📚 Documentation
+
+Comprehensive guides are available:
+
+- **[USAGE.md](USAGE.md)** - Complete voice command guide with examples
+  - All supported voice commands organized by category
+  - Natural language variations and examples
+  - How conversational memory works
+  - Tips & best practices
+  - Performance metrics
+  - Troubleshooting guide
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Deep dive into system design
+  - High-level architecture diagrams
+  - Design patterns and principles
+  - Security architecture
+  - Performance optimizations
+  - Two-phase response system
+  - Authentication & memory systems
+  - Database schema and indexing
 
 ## 📝 License
 

@@ -96,9 +96,16 @@ export default function VoiceChatSidebar({ onCommandProcessed, initialMessages =
     scrollToBottom();
   }, [messages]);
 
-  // Handle transcript - only add if it's new
+  // Also scroll when processing state changes (for loading message)
   useEffect(() => {
-    if (transcript && !isProcessing && transcript !== lastTranscriptRef.current) {
+    if (isProcessing) {
+      scrollToBottom();
+    }
+  }, [isProcessing]);
+
+  // Handle transcript - only add if it's new (show immediately, even while processing)
+  useEffect(() => {
+    if (transcript && transcript !== lastTranscriptRef.current) {
       lastTranscriptRef.current = transcript;
       setMessages((prev) => [
         ...prev,
@@ -110,7 +117,7 @@ export default function VoiceChatSidebar({ onCommandProcessed, initialMessages =
         },
       ]);
     }
-  }, [transcript, isProcessing]);
+  }, [transcript]);
 
   // Handle processing state
   useEffect(() => {
@@ -138,6 +145,8 @@ export default function VoiceChatSidebar({ onCommandProcessed, initialMessages =
   useEffect(() => {
     if (response && response.natural_response && response.natural_response !== lastResponseRef.current) {
       lastResponseRef.current = response.natural_response;
+      
+      // Add message to chat immediately
       setMessages((prev) => {
         // Remove loading message
         const filtered = prev.filter((m) => m.type !== 'loading');
@@ -151,12 +160,16 @@ export default function VoiceChatSidebar({ onCommandProcessed, initialMessages =
           },
         ];
       });
-      // Only refresh tasks list if the command succeeded
+      
+      // Trigger background refresh asynchronously (non-blocking)
       if (response.success && onCommandProcessedRef.current) {
-        onCommandProcessedRef.current();
+        // Use setTimeout to make it truly non-blocking
+        setTimeout(() => {
+          onCommandProcessedRef.current?.();
+        }, 0);
       }
     }
-  }, [response]); // Removed onCommandProcessed from dependencies
+  }, [response]);
 
   // Handle error - only add if it's new
   useEffect(() => {
@@ -241,11 +254,12 @@ export default function VoiceChatSidebar({ onCommandProcessed, initialMessages =
             }`}
           >
             {message.type === 'loading' ? (
-              <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[80%]">
+              <div className="bg-gray-100 rounded-lg px-5 py-4 max-w-[80%]">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                  <span className="text-xs text-gray-600 mr-2">Thinking</span>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-primary-400 rounded-full animate-bounce delay-200"></div>
                 </div>
               </div>
             ) : (

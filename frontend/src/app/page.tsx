@@ -18,6 +18,8 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [sidebarWidth, setSidebarWidth] = useState(384); // 384px = w-96 (24rem)
+  const [isResizing, setIsResizing] = useState(false);
 
   const { tasks, loading: tasksLoading, error, refreshTasks } = useTasks(isAuthenticated);
 
@@ -25,6 +27,11 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const storedUser = localStorage.getItem('user');
+    const storedWidth = localStorage.getItem('sidebar_width');
+
+    if (storedWidth) {
+      setSidebarWidth(parseInt(storedWidth));
+    }
 
     if (token && storedUser) {
       try {
@@ -73,6 +80,42 @@ export default function Home() {
     setIsAuthenticated(false);
     setChatHistory([]);
   };
+
+  // Handle sidebar resizing
+  const startResizing = () => {
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = window.innerWidth - e.clientX;
+      
+      // Constrain width between 300px and 800px
+      if (newWidth >= 300 && newWidth <= 800) {
+        setSidebarWidth(newWidth);
+        localStorage.setItem('sidebar_width', newWidth.toString());
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.classList.remove('resizing');
+    };
+
+    if (isResizing) {
+      document.body.classList.add('resizing');
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.body.classList.remove('resizing');
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Show loading state
   if (loading) {
@@ -129,12 +172,34 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Resize Handle */}
+      <div
+        className={`relative w-1 bg-gray-200 hover:bg-primary-400 cursor-col-resize transition-all duration-150 group ${
+          isResizing ? 'bg-primary-500 w-1.5' : ''
+        }`}
+        onMouseDown={startResizing}
+        style={{ cursor: 'col-resize' }}
+      >
+        {/* Grip dots indicator */}
+        <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center space-y-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
+        {/* Invisible wider hit area for easier grabbing */}
+        <div className="absolute inset-y-0 -left-2 -right-2 w-5" />
+      </div>
+
       {/* Voice Chat Sidebar */}
-      <aside className="w-96 flex-shrink-0 shadow-2xl">
+      <aside 
+        className="flex-shrink-0 shadow-2xl"
+        style={{ width: `${sidebarWidth}px` }}
+      >
         <VoiceChatSidebar 
           onCommandProcessed={() => {
-            refreshTasks();
-            loadChatHistory();
+            // Refresh tasks in background (non-blocking)
+            setTimeout(() => refreshTasks(), 0);
+            // Removed loadChatHistory() - messages already in VoiceChatSidebar state
           }}
           initialMessages={chatHistory}
         />

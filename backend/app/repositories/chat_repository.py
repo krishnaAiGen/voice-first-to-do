@@ -53,7 +53,7 @@ class ChatRepository:
         
         self.session.add(message)
         await self.session.commit()
-        await self.session.refresh(message)
+        # Removed refresh() - no need to SELECT after INSERT (saves ~3s per message)
         
         logger.debug(f"Created chat message for user {user_id}: {message_type}")
         return message

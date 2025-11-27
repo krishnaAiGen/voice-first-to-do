@@ -48,3 +48,9 @@ body {
   }
 }
 
+/* Prevent text selection while resizing */
+body.resizing {
+  user-select: none;
+  cursor: col-resize !important;
+}
+
