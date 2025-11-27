@@ -62,9 +62,9 @@ async def startup_event():
     
     # Warm up database connection pool
     try:
-        from app.clients.database_client import database_client
-        async with database_client.get_session() as session:
-            from sqlalchemy import text
+        from app.clients.database_client import db_client
+        from sqlalchemy import text
+        async with db_client.async_session_maker() as session:
             await session.execute(text("SELECT 1"))
         logger.info("Database connection pool warmed up")
     except Exception as e:
