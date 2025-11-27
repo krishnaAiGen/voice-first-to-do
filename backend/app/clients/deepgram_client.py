@@ -71,6 +71,8 @@ class DeepgramClient:
                     details="Deepgram returned empty transcript"
                 )
             
+            # Log with green color for success
+            print(f"\033[92m✓ Transcription: {transcript}\033[0m")
             logger.info(f"Transcription successful: {transcript}")
             return transcript
             

@@ -8,6 +8,7 @@ class VoiceCommandRequest(BaseModel):
     """Request schema for voice command processing"""
     
     audio_base64: str = Field(..., description="Base64-encoded audio data")
+    transcript: Optional[str] = Field(None, description="Pre-computed transcript (skip STT if provided)")
     user_id: Optional[str] = None  # Optional, falls back to default
 
 

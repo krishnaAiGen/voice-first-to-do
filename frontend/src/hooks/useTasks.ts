@@ -4,12 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { Task } from '@/types/task';
 import { taskApi } from '@/lib/api';
 
-export function useTasks() {
+export function useTasks(isAuthenticated: boolean = false) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async () => {
+    if (!isAuthenticated) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -21,7 +27,7 @@ export function useTasks() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchTasks();

@@ -24,6 +24,7 @@ export interface TaskCreate {
 
 export interface VoiceCommandRequest {
   audio_base64: string;
+  transcript?: string;  // Optional: Skip STT if provided
   user_id?: string;
 }
 

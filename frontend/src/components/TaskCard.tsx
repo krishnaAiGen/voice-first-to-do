@@ -45,17 +45,23 @@ export default function TaskCard({ task }: TaskCardProps) {
         <h3 className="text-lg font-semibold text-gray-900 flex-1">
           {task.title}
         </h3>
-        <div className="flex gap-2 ml-2">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColor}`}
-          >
-            {priorityLabel}
-          </span>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}
-          >
-            {statusLabel}
-          </span>
+        <div className="flex flex-col gap-1.5 ml-2">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500 font-medium">Priority:</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor}`}
+            >
+              {priorityLabel}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500 font-medium">Status:</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}
+            >
+              {statusLabel}
+            </span>
+          </div>
         </div>
       </div>
 

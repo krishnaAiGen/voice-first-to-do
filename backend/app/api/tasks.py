@@ -14,6 +14,7 @@ from app.schemas.task_schema import (
 from app.services.task_service import TaskService
 from app.repositories.task_repository import TaskRepository
 from app.clients.database_client import get_db
+from app.dependencies.auth import get_current_user
 from app.core.config import settings
 from app.utils.logger import setup_logger
 from app.utils.errors import TaskNotFoundException, DatabaseException
@@ -39,25 +40,26 @@ def get_task_service(db: AsyncSession = Depends(get_db)) -> TaskService:
 
 @router.get("", response_model=TaskListResponse)
 async def get_tasks(
-    user_id: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=500),
+    user_id: str = Depends(get_current_user),
     task_service: TaskService = Depends(get_task_service)
 ):
     """
-    Get all tasks for user (used for initial page load)
+    Get all tasks for authenticated user (used for initial page load)
+    
+    Headers:
+        Authorization: Bearer <access_token>
     
     Args:
-        user_id: User ID (optional, defaults to demo user)
         limit: Maximum number of tasks
+        user_id: Authenticated user ID from JWT
         task_service: Task service dependency
     
     Returns:
         TaskListResponse with tasks
     """
     try:
-        # Use default user for demo
-        user_uuid = UUID(user_id or settings.default_user_id)
-        
+        user_uuid = UUID(user_id)
         tasks = await task_service.get_all(user_uuid, limit)
         
         return TaskListResponse(

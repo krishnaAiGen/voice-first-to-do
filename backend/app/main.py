@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import voice, tasks
+from app.api import voice, tasks, auth, chat
 from app.core.config import settings
 from app.utils.logger import setup_logger
 
@@ -13,8 +13,8 @@ logger = setup_logger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="Voice-First To-Do API",
-    description="Voice-controlled to-do list with sub-2s latency",
-    version="1.0.0",
+    description="Voice-controlled to-do list with authentication and chat history",
+    version="2.0.0",
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None
 )
@@ -29,8 +29,10 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(voice.router, prefix="/api")
-app.include_router(tasks.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")  # Auth endpoints (no auth required)
+app.include_router(chat.router, prefix="/api")  # Chat history (requires auth)
+app.include_router(voice.router, prefix="/api")  # Voice commands (requires auth)
+app.include_router(tasks.router, prefix="/api")  # Task management (requires auth)
 
 
 @app.get("/")
@@ -57,6 +59,16 @@ async def startup_event():
     """Run on application startup"""
     logger.info("Starting Voice-First To-Do API")
     logger.info(f"Environment: {settings.environment}")
+    
+    # Warm up database connection pool
+    try:
+        from app.clients.database_client import database_client
+        async with database_client.get_session() as session:
+            from sqlalchemy import text
+            await session.execute(text("SELECT 1"))
+        logger.info("Database connection pool warmed up")
+    except Exception as e:
+        logger.warning(f"Failed to warm up connection pool: {e}")
 
 
 @app.on_event("shutdown")

@@ -20,9 +20,11 @@ export function useVoiceCommands() {
 
   const startRecording = useCallback(async () => {
     try {
+      // Clear previous states
       setError(null);
       setTranscript('');
       setResponse(null);
+      setIsProcessing(false);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -91,23 +93,48 @@ export function useVoiceCommands() {
   }, [isRecording]);
 
   const processAudio = async (audioBlob: Blob) => {
+    let transcriptText = '';
+    
     try {
-      setIsProcessing(true);
       setError(null);
 
       // Convert blob to base64
       const base64Audio = await blobToBase64(audioBlob);
 
-      // Send to API
+      // ✅ PHASE 1: Quick transcription (~1-2s)
+      try {
+        const transcriptResult = await taskApi.transcribeOnly({
+          audio_base64: base64Audio,
+        });
+        
+        if (transcriptResult.success && transcriptResult.transcript) {
+          // Show transcript immediately!
+          transcriptText = transcriptResult.transcript;
+          setTranscript(transcriptText);
+        }
+      } catch (transcribeErr) {
+        console.error('Transcription failed:', transcribeErr);
+        // Continue to full processing anyway
+      }
+
+      // ✅ PHASE 2: Full processing with cached transcript (~3-5s more, no duplicate STT)
+      // Now set processing to true AFTER transcript is shown
+      setIsProcessing(true);
+      
       const result = await taskApi.processVoiceCommand({
         audio_base64: base64Audio,
+        transcript: transcriptText || undefined,  // Pass transcript to skip STT
       });
 
+      // Update with final results
       setTranscript(result.transcript);
       setResponse(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process voice command');
+    } catch (err: any) {
+      // Log the actual error for debugging
       console.error('Error processing audio:', err);
+      
+      // Set a user-friendly error message
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }

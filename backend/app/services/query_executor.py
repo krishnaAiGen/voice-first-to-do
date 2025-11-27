@@ -494,7 +494,7 @@ class QueryExecutor:
         Returns:
             Formatted data
         """
-        if not result or not result.data:
+        if not result or result.data is None:
             return None
         
         data = result.data
