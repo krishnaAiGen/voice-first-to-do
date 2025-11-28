@@ -24,7 +24,7 @@ class GeminiClient:
         genai.configure(api_key=self.api_key)
         
         # Use Gemini 2.5 Flash for speed
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
     
     async def generate_intent(self, prompt: str) -> dict:
         """
