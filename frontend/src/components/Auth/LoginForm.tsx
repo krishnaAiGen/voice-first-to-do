@@ -20,19 +20,32 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setError('');
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const payload = isLogin
         ? { email: email.toLowerCase(), password }
         : { email: email.toLowerCase(), password, display_name: displayName };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api';
-      const response = await fetch(`${apiUrl.replace('/api', '')}${endpoint}`, {
+      // Use environment variable for API base URL
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const fullUrl = `${apiBaseUrl}${endpoint}`;
+      
+      console.log('Attempting login to:', fullUrl); // Debug log
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
+
+      console.log('Response status:', response.status); // Debug log
+      
+      // Handle empty or non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}. Backend may be unreachable.`);
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -42,6 +55,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const data = await response.json();
       onSuccess(data.access_token, data.refresh_token, data.user);
     } catch (err) {
+      console.error('Login error:', err); // Debug log
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
       setLoading(false);
