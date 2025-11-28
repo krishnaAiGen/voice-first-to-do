@@ -120,6 +120,8 @@ Rules:
 5. Parse relative dates: "tomorrow" = +1 day, "next week" = +7 days, "in 3 hours" = +3 hours
 6. Priority: "high"/"urgent" = 3, "medium" = 2, "low" = 1, unspecified = 0
 7. If user says "4th task" or "task 5", use selector="by_index" with index value
+8. **IMPORTANT**: When user asks for "all tasks", "my tasks", "task list", "bucket list", or similar generic phrases WITHOUT specific filters, use filters=[] (empty array) - these are colloquial ways of saying "show everything"
+9. Only add keyword filters when user mentions SPECIFIC task content (e.g., "grocery tasks", "work tasks", "client meeting task")
 
 Examples:
 
@@ -155,6 +157,34 @@ Command: "Show me overdue tasks"
     "limit": 50
   }}],
   "natural_response": "Here are your overdue tasks"
+}}
+
+Command: "Show me all my tasks" OR "Show all tasks" OR "What are all my tasks" OR "My bucket list" OR "Show my task list"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 50
+  }}],
+  "natural_response": "You have [N] tasks"
+}}
+
+Command: "What tasks do I have?"
+{{
+  "complexity": "simple",
+  "strategy": "sequential",
+  "steps": [{{
+    "order": 1,
+    "operation": "read",
+    "params": {{}},
+    "filters": [],
+    "limit": 50
+  }}],
+  "natural_response": "You have [N] tasks"
 }}
 
 Command: "Delete the 4th task"
@@ -342,13 +372,13 @@ Command: "Thank you"
 }}
 
 Additional Rules:
-8. For update/delete operations with search terms (e.g., "move my X task"), ALWAYS use multi_step:
+10. For update/delete operations with search terms (e.g., "move my X task"), ALWAYS use multi_step:
    - Step 1: read with keyword filter to find the task, save_result_as="task_to_update" or "task_to_delete"
    - Step 2: update/delete using use_result_from
-9. When updating, put all changed fields in modifications (not params). Never use both params and modifications.
-10. For status changes: use "completed", "in_progress", or "pending". Set completed_at when marking complete.
-11. Use keyword filter for task name searches - it's more flexible than exact matching
-12. For batch operations affecting multiple tasks, use update_batch with use_result_from
+11. When updating, put all changed fields in modifications (not params). Never use both params and modifications.
+12. For status changes: use "completed", "in_progress", or "pending". Set completed_at when marking complete.
+13. Use keyword filter for task name searches - it's more flexible than exact matching
+14. For batch operations affecting multiple tasks, use update_batch with use_result_from
 """
     
     async def parse(self, command: str, user_context: Optional[Dict[str, Any]] = None) -> IntentResult:
